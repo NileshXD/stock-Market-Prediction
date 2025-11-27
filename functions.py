@@ -60,8 +60,8 @@ def RSI(data, n):
         loss = df['loss'].tolist()
         for i in range(len(df)):
             if i < n:
-                avg_gain.append(np.NaN)
-                avg_loss.append(np.NaN)
+                avg_gain.append(np.nan)
+                avg_loss.append(np.nan)
             elif i == n:
                 avg_gain.append(df['gain'].rolling(n).mean().tolist()[n])
                 avg_loss.append(df['loss'].rolling(n).mean().tolist()[n])
@@ -95,9 +95,9 @@ def ADX(data, n):
         DMminus = df2['DMminus'].tolist()
         for i in range(len(df2)):
             if i < n:
-                TRn.append(np.NaN)
-                DMplusN.append(np.NaN)
-                DMminusN.append(np.NaN)
+                TRn.append(np.nan)
+                DMplusN.append(np.nan)
+                DMminusN.append(np.nan)
             elif i == n:
                 TRn.append(df2['TR'].rolling(n).sum().tolist()[n])
                 DMplusN.append(df2['DMplus'].rolling(n).sum().tolist()[n])
@@ -118,7 +118,7 @@ def ADX(data, n):
         DX = df2['DX'].tolist()
         for j in range(len(df2)):
             if j < 2 * n - 1:
-                ADX.append(np.NaN)
+                ADX.append(np.nan)
             elif j == 2 * n - 1:
                 ADX.append(df2['DX'][j - n + 1:j + 1].mean())
             elif j > 2 * n - 1:
