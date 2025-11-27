@@ -42,6 +42,15 @@ end_input =  st.date_input(
 
 df = yf.download(ticker,start_input,end_input)
 df = df.reset_index()
+
+df = df.rename(columns={
+    'Open': 'open',
+    'High': 'high',
+    'Low': 'low',
+    'Close': 'close',
+    'Volume': 'volume'
+})
+
 df['Date'] = pd.to_datetime(df['Date']).dt.date
 
 
