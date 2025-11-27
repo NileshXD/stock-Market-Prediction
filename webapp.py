@@ -23,7 +23,6 @@ from st_aggrid.grid_options_builder import GridOptionsBuilder
 from finta import TA
 import ta
 import sqlite3
-import talib
 from patterns import candlestick_patterns
 from functions import *
 from millify import millify
