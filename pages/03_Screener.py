@@ -18,9 +18,25 @@ ticker_input = st.selectbox('Enter or Choose stock', symbol)
 start_input = dt.datetime.today() - dt.timedelta(120)
 end_input = dt.datetime.today()
 
-df = yf.download(ticker_input,start_input,end_input)
+df = yf.download(
+    ticker_input,
+    start=start_input,
+    end=end_input,
+    auto_adjust=False,
+    group_by="column"
+)
+
+# Flatten MultiIndex columns if any
+if isinstance(df.columns, pd.MultiIndex):
+    df.columns = df.columns.get_level_values(-1)
+
+# Ensure Adj Close exists for RSI/other functions
+if 'Adj Close' not in df.columns and 'Close' in df.columns:
+    df['Adj Close'] = df['Close']
+
 df = df.reset_index()
 df['Date'] = pd.to_datetime(df['Date']).dt.date
+
 
 
 stock = yf.Ticker(ticker_input)
