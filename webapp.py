@@ -4,7 +4,6 @@
 import time
 import pandas as pd
 import numpy as np
-import tensorflow as tf
 import random as rn
 import yfinance as yf
 import streamlit as st
@@ -13,7 +12,6 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from sklearn.preprocessing import MinMaxScaler
 np.random.seed(1)
-tf.random.set_seed(1)
 rn.seed(1)
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, LSTM
