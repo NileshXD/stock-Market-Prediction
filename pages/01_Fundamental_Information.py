@@ -46,9 +46,25 @@ end_input =  st.date_input(
 )
 
 
-hist_price = yf.download(ticker,start_input,end_input)
+hist_price = yf.download(
+    ticker,
+    start=start_input,
+    end=end_input,
+    auto_adjust=False,        # keep Adj Close
+    group_by="column"         # avoid MultiIndex columns
+)
+
+# Flatten any MultiIndex columns (safety)
+if isinstance(hist_price.columns, pd.MultiIndex):
+    hist_price.columns = hist_price.columns.get_level_values(-1)
+
+# Make sure we have Adj Close (fallback to Close)
+if 'Adj Close' not in hist_price.columns and 'Close' in hist_price.columns:
+    hist_price['Adj Close'] = hist_price['Close']
+
 hist_price = hist_price.reset_index()
 hist_price['Date'] = pd.to_datetime(hist_price['Date']).dt.date
+
 
 @st.cache
 def convert_df(df):
