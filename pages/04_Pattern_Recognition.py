@@ -5,7 +5,6 @@ import datetime as dt
 from functions import *
 import plotly.graph_objects as go
 from patterns import candlestick_patterns
-import talib
 
 
 csv = pd.read_csv('symbols.csv')
