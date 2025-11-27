@@ -5,7 +5,10 @@ import datetime as dt
 from functions import *
 import plotly.graph_objects as go
 from patterns import candlestick_patterns
-
+try:
+    import talib
+except ImportError:
+    talib = None
 
 csv = pd.read_csv('symbols.csv')
 symbol = csv['Symbol'].tolist()
@@ -49,9 +52,23 @@ if (show == 'Show'):
             min_value=min_value, max_value=max_value, help='Enter the last date till which you have to look the price'
         )
 
-        hist_price = yf.download(ticker_input, start_input, end_input)
-        hist_price = hist_price.reset_index()
-        hist_price['Date'] = pd.to_datetime(hist_price['Date']).dt.date
+        hist_price = yf.download(
+        ticker_input,
+        start=start_input,
+        end=end_input,
+        auto_adjust=False,
+        group_by="column"
+)
+
+if isinstance(hist_price.columns, pd.MultiIndex):
+    hist_price.columns = hist_price.columns.get_level_values(-1)
+
+if 'Adj Close' not in hist_price.columns and 'Close' in hist_price.columns:
+    hist_price['Adj Close'] = hist_price['Close']
+
+hist_price = hist_price.reset_index()
+hist_price['Date'] = pd.to_datetime(hist_price['Date']).dt.date
+
 
 
 
@@ -110,26 +127,55 @@ else:
 # retrieving data from database
 start_input = dt.datetime.today() - dt.timedelta(365)
 end_input = dt.datetime.today()
-df = yf.download(ticker_input, start_input, end_input)
+
+df = yf.download(
+    ticker_input,
+    start=start_input,
+    end=end_input,
+    auto_adjust=False,
+    group_by="column"
+)
+
+if isinstance(df.columns, pd.MultiIndex):
+    df.columns = df.columns.get_level_values(-1)
+
+if 'Adj Close' not in df.columns and 'Close' in df.columns:
+    df['Adj Close'] = df['Close']
+
 df = df.reset_index()
 df['Date'] = pd.to_datetime(df['Date']).dt.date
 
 
+
 #scanning
+# scanning
 candle_names = candlestick_patterns.keys()
 
-for candle,names in candlestick_patterns.items():
+if talib is None:
+    st.error(
+        "TA-Lib is not installed in this environment, "
+        "so candlestick pattern scanning is currently disabled."
+    )
+    signal_df = pd.DataFrame(columns=["Pattern Names", "Signal"])
+else:
+    for candle, names in candlestick_patterns.items():
         df[candle] = getattr(talib, candle)(df['Open'], df['High'], df['Low'], df['Close'])
-        last = df[candle].tail(1).values[0]
 
+    # Drop price columns & create signals
+    drop_cols = ['Date', 'Open', 'High', 'Low', 'Close', 'Volume']
+    # Only drop Adj Close if it exists
+    if 'Adj Close' in df.columns:
+        drop_cols.append('Adj Close')
 
-tmp_df = df.drop(['Date', 'Open','High', 'Low', 'Close', 'Adj Close', 'Volume'], axis=1,)
-tmp_df_1 = tmp_df.T
-tmp_last = tmp_df_1.iloc[: , -1].tolist()
-signal_df = pd.DataFrame()
-signal_df['Pattern Names'] = candlestick_patterns.values()
-signal_df['Signal'] = tmp_last
-signal_df['Signal'] = signal_df['Signal'].map({0: 'Neutral', -100:'Bearish', 100:'Bullish'})
+    tmp_df = df.drop(drop_cols, axis=1)
+    tmp_df_1 = tmp_df.T
+    tmp_last = tmp_df_1.iloc[:, -1].tolist()
+
+    signal_df = pd.DataFrame()
+    signal_df['Pattern Names'] = candlestick_patterns.values()
+    signal_df['Signal'] = tmp_last
+    signal_df['Signal'] = signal_df['Signal'].map({0: 'Neutral', -100: 'Bearish', 100: 'Bullish'})
+
 
 #metrics
 bullish_count = len(signal_df[signal_df['Signal'] == 'Bullish'])
