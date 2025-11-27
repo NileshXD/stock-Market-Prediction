@@ -33,19 +33,38 @@ def load_price_data(ticker: str) -> pd.DataFrame:
         ticker,
         start=start,
         end=end,
-        auto_adjust=False,
-        group_by="column"
+        auto_adjust=False,        # ensures Adj Close exists
+        group_by="column"         # prevents MultiIndex
     )
 
+    # If MultiIndex → flatten
     if isinstance(df.columns, pd.MultiIndex):
         df.columns = df.columns.get_level_values(-1)
 
-    if 'Adj Close' not in df.columns and 'Close' in df.columns:
-        df['Adj Close'] = df['Close']
+    # Safety: Ensure all columns exist
+    required_cols = ["Open", "High", "Low", "Close", "Adj Close", "Volume"]
+
+    # Case 1: Adj Close missing → create copy of Close
+    if "Adj Close" not in df.columns:
+        if "Close" in df.columns:
+            df["Adj Close"] = df["Close"]
+        else:
+            raise KeyError("Neither 'Adj Close' nor 'Close' exists in downloaded data.")
+
+    # Case 2: Close missing → create from Adj Close
+    if "Close" not in df.columns:
+        df["Close"] = df["Adj Close"]
+
+    # FINAL CHECK
+    for col in required_cols:
+        if col not in df.columns:
+            df[col] = np.nan   # create empty fallback column
 
     df = df.reset_index()
-    df['Date'] = pd.to_datetime(df['Date']).dt.date
+    df["Date"] = pd.to_datetime(df["Date"]).dt.date
+
     return df
+
 
 def build_features(df: pd.DataFrame) -> pd.DataFrame:
     """Create simple tabular features for next-day close prediction."""
