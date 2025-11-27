@@ -24,6 +24,20 @@ ticker = st.selectbox(
     index=symbol.index('TRIDENT.NS')
 )
 
+def check_data_length(df, min_rows=200):
+    """Ensure dataset has enough rows to train ML models."""
+    if df is None or df.empty:
+        st.error("❌ No data returned for this ticker. Try another symbol.")
+        st.stop()
+
+    if len(df) < min_rows:
+        st.error(f"❌ Not enough data to train the forecasting model.\n"
+                 f"Required: {min_rows} rows\n"
+                 f"Found: {len(df)} rows\n\n"
+                 f"Try another ticker with longer history.")
+        st.stop()
+
+
 def load_price_data(ticker: str) -> pd.DataFrame:
     """Download last 5 years of data safely and handle empty/missing columns."""
     start = dt.datetime.today() - dt.timedelta(5 * 365)
@@ -156,9 +170,18 @@ def forecast_next_day(models_info, latest_row: pd.Series):
 
 # === Main run ===
 df = load_price_data(ticker)
-st.write(f"Using data from **{df['Date'].min()}** to **{df['Date'].max()}**.")
+
+# 1️⃣ Check raw data
+check_data_length(df, min_rows=200)
 
 feat_df = build_features(df)
+
+# 2️⃣ Check engineered data
+check_data_length(feat_df, min_rows=150)
+
+st.write(f"Using data from **{df['Date'].min()}** to **{df['Date'].max()}**.")
+
+
 
 if len(feat_df) < 100:
     st.error("Not enough data to train the forecasting models.")
