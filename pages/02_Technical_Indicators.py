@@ -1,5 +1,12 @@
 from finta import TA
 import ta
+
+# TA-Lib is optional – don't crash if missing
+try:
+    import talib
+except ImportError:
+    talib = None
+
 from patterns import candlestick_patterns
 from functions import *
 import yfinance as yf
@@ -40,8 +47,25 @@ end_input =  st.date_input(
 )
 
 
-df = yf.download(ticker,start_input,end_input)
+df = yf.download(
+    ticker,
+    start=start_input,
+    end=end_input,
+    auto_adjust=False,
+    group_by="column"
+)
+
+# Flatten any MultiIndex columns
+if isinstance(df.columns, pd.MultiIndex):
+    df.columns = df.columns.get_level_values(-1)
+
+# Ensure Adj Close exists for indicators that use it
+if 'Adj Close' not in df.columns and 'Close' in df.columns:
+    df['Adj Close'] = df['Close']
+
 df = df.reset_index()
+df['Date'] = pd.to_datetime(df['Date']).dt.date
+
 
 df = df.rename(columns={
     'Open': 'open',
@@ -51,7 +75,6 @@ df = df.rename(columns={
     'Volume': 'volume'
 })
 
-df['Date'] = pd.to_datetime(df['Date']).dt.date
 
 
 # graph template
